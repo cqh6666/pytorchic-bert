@@ -169,6 +169,7 @@ class Classifier(nn.Module):
 #pretrain_file='../uncased_L-12_H-768_A-12/bert_model.ckpt',
 #pretrain_file='../exp/bert/pretrain_100k/model_epoch_3_steps_9732.pt',
 
+
 def main(task='mrpc',
          train_cfg='config/train_mrpc.json',
          model_cfg='config/bert_base.json',
@@ -181,23 +182,31 @@ def main(task='mrpc',
          max_len=128,
          mode='train'):
 
+    # 传入训练模型配置文件
     cfg = train.Config.from_json(train_cfg)
+    # 传入BERT网络配置文件
     model_cfg = models.Config.from_json(model_cfg)
 
     set_seeds(cfg.seed)
 
+    # 传入 BERT模型的词典文件
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab, do_lower_case=True)
+    # 数据集任务类型为mrpc
     TaskDataset = dataset_class(task) # task dataset class according to the task
+    # 数据预处理
     pipeline = [Tokenizing(tokenizer.convert_to_unicode, tokenizer.tokenize),
                 AddSpecialTokensWithTruncation(max_len),
                 TokenIndexing(tokenizer.convert_tokens_to_ids,
                               TaskDataset.labels, max_len)]
     dataset = TaskDataset(data_file, pipeline)
+
+    # 用pytorch的DataLoader类读取数据
     data_iter = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
-
+    # 丢入分类网络结构
     model = Classifier(model_cfg, len(TaskDataset.labels))
+    # 交叉熵损失函数
     criterion = nn.CrossEntropyLoss()
-
+    # 训练流程写在 train.py 里的 Trainer类里
     trainer = train.Trainer(cfg,
                             model,
                             data_iter,
@@ -205,9 +214,10 @@ def main(task='mrpc',
                             save_dir, get_device())
 
     if mode == 'train':
+        # 训练模式需要计算每一次训练的损失值，查看模型效果。
         def get_loss(model, batch, global_step): # make sure loss is a scalar tensor
             input_ids, segment_ids, input_mask, label_id = batch
-            logits = model(input_ids, segment_ids, input_mask)
+            logits = model(input_ids, segment_ids, input_mask) # 预测值
             loss = criterion(logits, label_id)
             return loss
 

@@ -87,11 +87,17 @@ def whitespace_tokenize(text):
 
 
 class FullTokenizer(object):
-    """Runs end-to-end tokenziation."""
+    """Runs end-to-end tokenziation.
+    分词。
+    """
 
+    # 传入参数 词典文件，是否区分大小写
     def __init__(self, vocab_file, do_lower_case=True):
+        # 加载词典,建立有序字典结构
         self.vocab = load_vocab(vocab_file)
+        # 根据空格等进行普通的分词
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+        # 将结果再细粒度的切分为WordPiece
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
     def tokenize(self, text):
@@ -111,7 +117,9 @@ class FullTokenizer(object):
 
 
 class BasicTokenizer(object):
-    """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
+    """Runs basic tokenization (punctuation splitting, lower casing, etc.).
+    运行基本的标记 结合分割，小写等
+    """
 
     def __init__(self, do_lower_case=True):
         """Constructs a BasicTokenizer.
@@ -123,7 +131,9 @@ class BasicTokenizer(object):
 
     def tokenize(self, text):
         """Tokenizes a piece of text."""
+        # 转为unicode
         text = convert_to_unicode(text)
+        # 去除无意义的字符
         text = self._clean_text(text)
         orig_tokens = whitespace_tokenize(text)
         split_tokens = []
@@ -138,6 +148,7 @@ class BasicTokenizer(object):
 
     def _run_strip_accents(self, text):
         """Strips accents from a piece of text."""
+        # 对text进行标准化
         text = unicodedata.normalize("NFD", text)
         output = []
         for char in text:
@@ -148,7 +159,11 @@ class BasicTokenizer(object):
         return "".join(output)
 
     def _run_split_on_punc(self, text):
-        """Splits punctuation on a piece of text."""
+        """Splits punctuation on a piece of text.
+        这个函数对输入字符串用标点进行切分，返回一个list
+        list每一个元素都是一个char
+        """
+        # 用标点切分
         chars = list(text)
         i = 0
         start_new_word = True
@@ -169,6 +184,7 @@ class BasicTokenizer(object):
 
     def _clean_text(self, text):
         """Performs invalid character removal and whitespace cleanup on text."""
+        # 去除无意义的字符
         output = []
         for char in text:
             cp = ord(char)
@@ -182,7 +198,9 @@ class BasicTokenizer(object):
 
 
 class WordpieceTokenizer(object):
-    """Runs WordPiece tokenization."""
+    """Runs WordPiece tokenization.
+    WordPiece(Byte Pair Encoding)是一种解决OOV问题的方法，如果不管细节，我们把它看成比词更小的基本单位就行。
+    """
 
     def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=100):
         self.vocab = vocab
@@ -207,6 +225,7 @@ class WordpieceTokenizer(object):
           A list of wordpiece tokens.
         """
 
+        # 该算法使用贪心最长匹配优先算法来执行标记化,使用给定的词汇表。
         text = convert_to_unicode(text)
 
         output_tokens = []
@@ -256,7 +275,7 @@ def _is_whitespace(char):
 
 
 def _is_control(char):
-    """Checks whether `chars` is a control character."""
+    """Checks whether `chars` is a control character. 特殊字符"""
     # These are technically control characters but we count them as whitespace
     # characters.
     if char == "\t" or char == "\n" or char == "\r":
@@ -268,7 +287,10 @@ def _is_control(char):
 
 
 def _is_punctuation(char):
-    """Checks whether `chars` is a punctuation character."""
+    """Checks whether `chars` is a punctuation character.
+    判断一个字符是否标点
+    """
+
     cp = ord(char)
     # We treat all non-letter/number ASCII as punctuation.
     # Characters such as "^", "$", and "`" are not in the Unicode

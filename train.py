@@ -41,20 +41,27 @@ class Trainer(object):
         self.device = device # device name
 
     def train(self, get_loss, model_file=None, pretrain_file=None, data_parallel=True):
-        """ Train Loop """
-        self.model.train() # train mode
+        """ Train Loop  训练流程"""
+
+        # 训练模式
+        self.model.train()
+        # 读取已有的模型
         self.load(model_file, pretrain_file)
+        # 模型GPU处理
         model = self.model.to(self.device)
         if data_parallel: # use Data Parallelism with Multi-GPU
+            # 分布式训练
             model = nn.DataParallel(model)
 
         global_step = 0 # global iteration steps regardless of epochs
         for e in range(self.cfg.n_epochs):
             loss_sum = 0. # the sum of iteration losses to get average loss in every epoch
+            # 添加一个进度提示信息
             iter_bar = tqdm(self.data_iter, desc='Iter (loss=X.XXX)')
             for i, batch in enumerate(iter_bar):
                 batch = [t.to(self.device) for t in batch]
 
+                # BP反向传播
                 self.optimizer.zero_grad()
                 loss = get_loss(model, batch, global_step).mean() # mean() for Data Parallelism
                 loss.backward()
@@ -62,22 +69,30 @@ class Trainer(object):
 
                 global_step += 1
                 loss_sum += loss.item()
+
+                # 显示进度条左边信息
                 iter_bar.set_description('Iter (loss=%5.3f)'%loss.item())
 
+                # 每100次就保存一个pt文件
                 if global_step % self.cfg.save_steps == 0: # save
                     self.save(global_step)
 
+                # 最多1w次迭代
                 if self.cfg.total_steps and self.cfg.total_steps < global_step:
                     print('Epoch %d/%d : Average Loss %5.3f'%(e+1, self.cfg.n_epochs, loss_sum/(i+1)))
                     print('The Total Steps have been reached.')
                     self.save(global_step) # save and finish when global_steps reach total_steps
                     return
 
+            # 一次迭代进行输出损失值
             print('Epoch %d/%d : Average Loss %5.3f'%(e+1, self.cfg.n_epochs, loss_sum/(i+1)))
+
+        # 保存最后一次的参数pt文件
         self.save(global_step)
 
     def eval(self, evaluate, model_file, data_parallel=True):
         """ Evaluation Loop """
+        # 评估模式
         self.model.eval() # evaluation mode
         self.load(model_file, None)
         model = self.model.to(self.device)
@@ -88,6 +103,7 @@ class Trainer(object):
         iter_bar = tqdm(self.data_iter, desc='Iter (loss=X.XXX)')
         for batch in iter_bar:
             batch = [t.to(self.device) for t in batch]
+            # 不进行梯度计算
             with torch.no_grad(): # evaluation without gradient calculation
                 accuracy, result = evaluate(model, batch) # accuracy to print
             results.append(result)
@@ -97,10 +113,12 @@ class Trainer(object):
 
     def load(self, model_file, pretrain_file):
         """ load saved model or pretrained transformer (a part of model) """
+        # 若有已有的模型文件，则可以读取该模型文件的所有参数，然后继续训练
         if model_file:
             print('Loading the model from', model_file)
             self.model.load_state_dict(torch.load(model_file))
 
+        # 使用可预测的transformer结构
         elif pretrain_file: # use pretrained transformer
             print('Loading the pretrained model from', pretrain_file)
             if pretrain_file.endswith('.ckpt'): # checkpoint file in tensorflow

@@ -32,17 +32,17 @@ before fine-tuning.
 * make sure that "total_steps" in train_mrpc.json is n_epochs*(num_data/batch_size)
 ```
 export GLUE_DIR=/path/to/glue
-export BERT_PRETRAIN=/path/to/pretrain
+export BERT_BASE_DIR=/path/to/pretrain
 export SAVE_DIR=/path/to/save
 
-python classify.py \
+python3 classify.py \
     --task mrpc \
     --mode train \
     --train_cfg config/train_mrpc.json \
     --model_cfg config/bert_base.json \
     --data_file $GLUE_DIR/MRPC/train.tsv \
-    --pretrain_file $BERT_PRETRAIN/bert_model.ckpt \
-    --vocab $BERT_PRETRAIN/vocab.txt \
+    --pretrain_file $BERT_BASE_DIR/bert_model.ckpt \
+    --vocab $BERT_BASE_DIR/vocab.txt \
     --save_dir $SAVE_DIR \
     --max_len 128
 ```
@@ -63,14 +63,14 @@ export GLUE_DIR=/path/to/glue
 export BERT_PRETRAIN=/path/to/pretrain
 export SAVE_DIR=/path/to/save
 
-python classify.py \
+python3 classify.py \
     --task mrpc \
     --mode eval \
     --train_cfg config/train_mrpc.json \
     --model_cfg config/bert_base.json \
     --data_file $GLUE_DIR/MRPC/dev.tsv \
     --model_file $SAVE_DIR/model_steps_345.pt \
-    --vocab $BERT_PRETRAIN/vocab.txt \
+    --vocab $BERT_BASE_DIR/vocab.txt \
     --max_len 128
 ```
 Output :
