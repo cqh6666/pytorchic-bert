@@ -10,4 +10,5 @@ __pycache__
 .idea
 dstc7.egg-info/*
 *.ipynb
-/data/
+/data/glue_data/MRPC
+/data/uncased_L-12_H-768_A-12
